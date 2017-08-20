@@ -132,7 +132,7 @@ class NAVT(app_manager.RyuApp):
         else:
             if ip_seg[0] == self.EXTERNAL_IP_SEG[0]:
             # if ip_seg[0] == self.EXTERNAL_IP_SEG[0] and int(ip_seg[1]) in self.TEAMS_RANGE:
-                team_id = ip_seg[3]
+                team_id = ip_seg[1]
                 vid = self.get_vid(team_id)
                 internal_ip = "%s.%s.%s.%s" % (self.INTERNAL_IP_SEG[0], self.INTERNAL_IP_SEG[1], ip_seg[2], ip_seg[3])
                 external_ip = ip_addr
