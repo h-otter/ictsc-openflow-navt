@@ -150,8 +150,13 @@ class NAVT(app_manager.RyuApp):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
-        mod = parser.OFPFlowMod(datapath=datapath, priority=priority, match=match, instructions=inst, idle_timeout=idle_timeout)
-        datapath.send_msg(mod)
+        mod = parser.OFPFlowMod(datapath=datapath,
+                                priority=priority,
+                                match=match,
+                                instructions=inst,
+                                idle_timeout=idle_timeout)
+        result = datapath.send_msg(mod)
+        self.logger.info("  send_msg result: %s" % (result))
 
 
     def _in2ex_ip(self, datapath, pkt):
