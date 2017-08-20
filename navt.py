@@ -3,7 +3,11 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from ryu.ofproto import ether
-from ryu.lib.packet import packet, ethernet, ipv4, vlan
+from ryu.lib.packet import packet
+from ryu.lib.packet import ethernet
+from ryu.lib.packet import ipv4
+from ryu.lib.packet import vlan
+from ryu.lib.packet import arp
 from logging import getLogger, DEBUG, Formatter
 from logging.handlers import RotatingFileHandler as RFH
 from datetime import datetime
@@ -56,30 +60,6 @@ class NAVT(app_manager.RyuApp):
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions, 0)
 
-        # ARP proxy
-        for team_id in self.TEAMS_RANGE:
-            vid = self.get_vid(team_id)
-
-            # internal to external
-            match = parser.OFPMatch(vlan_vid=(0x1000 | vid),
-                                    eth_type=ether.ETH_TYPE_ARP,
-                                    in_port=self.INTERNAL_PORT)
-            actions = [parser.OFPActionPopVlan(),
-                       parser.OFPActionOutput(self.EXTERNAL_PORT)]
-            self.add_flow(datapath, 20000, match, actions)
-
-            # external to internal
-            tpa = ("0.0.0.%d" % (team_id), "0.0.0.255")
-            match = parser.OFPMatch(in_port=self.EXTERNAL_PORT,
-                                    eth_type=ether.ETH_TYPE_ARP)
-            # match = parser.OFPMatch(in_port=self.EXTERNAL_PORT,
-            #                         eth_type=ether.ETH_TYPE_ARP,
-            #                         arp_tpa=tpa)
-            actions = [parser.OFPActionPushVlan(ether.ETH_TYPE_8021Q),
-                       parser.OFPActionSetField(vlan_vid=vid | ofproto_v1_3.OFPVID_PRESENT),
-                       parser.OFPActionOutput(self.INTERNAL_PORT)]
-            self.add_flow(datapath, 20000, match, actions)
-
         self.logger.info('  Switch ID: %d' % datapath.id)
 
 
@@ -105,13 +85,13 @@ class NAVT(app_manager.RyuApp):
                 self._ex2in_ip(datapath, pkt)
             else:
                 self.logger.warn("Get packets from invalid port: %d", in_port)
-        # elif eth_type == ether.ETH_TYPE_ARP:
-        #     if in_port == self.INTERNAL_PORT:
-        #         self._in2ex_ip(datapath, pkt)
-        #     elif in_port == self.EXTERNAL_PORT:
-        #         self._ex2in_ip(datapath, pkt)
-        #     else:
-        #         self.logger.warn("Get packets from invalid port: %d", in_port)
+        elif eth_type == ether.ETH_TYPE_ARP:
+            if in_port == self.INTERNAL_PORT:
+                self._in2ex_arp(datapath, pkt)
+            elif in_port == self.EXTERNAL_PORT:
+                self._ex2in_arp(datapath, pkt)
+            else:
+                self.logger.warn("Get packets from invalid port: %d", in_port)
         return
 
 
@@ -177,7 +157,6 @@ class NAVT(app_manager.RyuApp):
         except TypeError:
             self.logger.warn("  Invalid translating IP")
             return
-
         self.logger.info("  Translated ex_ip %s, in_ip %s, vid %s" % (ex_ip, in_ip, vid))
         parser = datapath.ofproto_parser
 
@@ -212,7 +191,6 @@ class NAVT(app_manager.RyuApp):
         except TypeError:
             self.logger.warn("  Invalid translating IP")
             return
-
         self.logger.info("  Translated ex_ip %s, in_ip %s, vid %s" % (ex_ip, in_ip, vid))
         parser = datapath.ofproto_parser
 
@@ -235,3 +213,47 @@ class NAVT(app_manager.RyuApp):
                    parser.OFPActionSetField(ipv4_src=ex_ip),
                    parser.OFPActionOutput(self.EXTERNAL_PORT)]
         self.add_flow(datapath, 30000, match, actions, 60)
+
+
+    def _in2ex_arp(self, datapath, pkt):
+        self.logger.info("[ARP] Internal network to External network")
+        pkt_ethernet = pkt.get_protocol(ethernet.ethernet)
+        pkt_arp = pkt.get_protocol(arp.arp)
+        self.logger.info("  Input ARP %s" % (pkt_arp))
+
+        new_pkt = packet.Packet()
+        new_pkt.add_protocol(pkt_ethernet)
+        new_pkt.add_protocol(pkt_arp)
+        new_pkt.serialize()
+
+        actions = [datapath.ofproto_parser.OFPActionOutput(self.EXTERNAL_PORT, 0)]
+        out = datapath.ofproto_parser.OFPPacketOut(datapath=datapath,
+                                                   buffer_id=0xffffffff,
+                                                   in_port=datapath.ofproto.OFPP_CONTROLLER,
+                                                   actions=actions,
+                                                   data=new_pkt.data)
+        datapath.send_msg(out)
+
+
+    def _ex2in_arp(self, datapath, pkt):
+        self.logger.info("[ARP] External network to Internal network")
+        pkt_ethernet = pkt.get_protocol(ethernet.ethernet)
+        pkt_arp = pkt.get_protocol(arp.arp)
+        self.logger.info("  Input ARP %s" % (pkt_arp))
+
+        ip_seg = pkt_arp.dst_ip.split('.')
+        pkt_vlan = vlan.vlan(vid=int(ip_seg[3]))
+
+        new_pkt = packet.Packet()
+        new_pkt.add_protocol(pkt_ethernet)
+        new_pkt.add_protocol(pkt_vlan)
+        new_pkt.add_protocol(pkt_arp)
+        new_pkt.serialize()
+
+        actions = [datapath.ofproto_parser.OFPActionOutput(self.INTERNAL_PORT, 0)]
+        out = datapath.ofproto_parser.OFPPacketOut(datapath=datapath,
+                                                   buffer_id=0xffffffff,
+                                                   in_port=datapath.ofproto.OFPP_CONTROLLER,
+                                                   actions=actions,
+                                                   data=new_pkt.data)
+        datapath.send_msg(out)
