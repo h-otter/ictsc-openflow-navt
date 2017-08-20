@@ -69,8 +69,10 @@ class NAVT(app_manager.RyuApp):
             self.add_flow(datapath, 20000, match, actions, 60)
 
             # external to internal
+            tpa = ("0.0.0.%d" % (team_id), "0.0.0.255")
             match = parser.OFPMatch(in_port=self.EXTERNAL_PORT,
-                                    eth_type=ether.ETH_TYPE_ARP)
+                                    eth_type=ether.ETH_TYPE_ARP,
+                                    arp_tpa=tpa)
             actions = [parser.OFPActionPushVlan(ether.ETH_TYPE_8021Q),
                        parser.OFPActionSetField(vlan_vid=vid | ofproto_v1_3.OFPVID_PRESENT),
                        parser.OFPActionOutput(self.INTERNAL_PORT)]
