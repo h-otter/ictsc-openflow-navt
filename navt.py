@@ -71,8 +71,10 @@ class NAVT(app_manager.RyuApp):
             # external to internal
             tpa = ("0.0.0.%d" % (team_id), "0.0.0.255")
             match = parser.OFPMatch(in_port=self.EXTERNAL_PORT,
-                                    eth_type=ether.ETH_TYPE_ARP,
-                                    arp_tpa=tpa)
+                                    eth_type=ether.ETH_TYPE_ARP)
+            # match = parser.OFPMatch(in_port=self.EXTERNAL_PORT,
+            #                         eth_type=ether.ETH_TYPE_ARP,
+            #                         arp_tpa=tpa)
             actions = [parser.OFPActionPushVlan(ether.ETH_TYPE_8021Q),
                        parser.OFPActionSetField(vlan_vid=vid | ofproto_v1_3.OFPVID_PRESENT),
                        parser.OFPActionOutput(self.INTERNAL_PORT)]
@@ -156,7 +158,7 @@ class NAVT(app_manager.RyuApp):
                                 instructions=inst,
                                 idle_timeout=idle_timeout)
         result = datapath.send_msg(mod)
-        self.logger.info("  send_msg result: %s" % (result))
+        self.logger.debug("  send_msg result: %s" % (result))
 
 
     def _in2ex_ip(self, datapath, pkt):
