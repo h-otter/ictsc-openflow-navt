@@ -166,7 +166,7 @@ class NAVT(app_manager.RyuApp):
         self.logger.info("  Input IP %s, VLAN %s" % (pkt_ipv4, src_vlan))
 
         try:
-            (ex_ip, in_ip, vid) = self.translate_ip(pkt_ipv4.dst)
+            (ex_ip, in_ip, vid) = self.translate_ip(pkt_ipv4.src, src_vlan)
         except TypeError:
             self.logger.warn("  Invalid translating IP")
             return
