@@ -242,8 +242,10 @@ class NAVT(app_manager.RyuApp):
         pkt_ethernet.ethertype = ether.ETH_TYPE_8021Q
         pkt_arp = pkt.get_protocol(arp.arp)
         self.logger.info("  Input ARP %s" % (pkt_arp))
+
         ip_seg = pkt_arp.dst_ip.split('.')
-        pkt_vlan = vlan.vlan(vid=int(ip_seg[3]), ethertype=ether.ETH_TYPE_ARP)
+        vid = self.get_vid(int(ip_seg[3]))
+        pkt_vlan = vlan.vlan(vid=vid, ethertype=ether.ETH_TYPE_ARP)
 
         new_pkt = packet.Packet()
         new_pkt.add_protocol(pkt_ethernet)
