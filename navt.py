@@ -166,7 +166,7 @@ class NAVT(app_manager.RyuApp):
         if pkt_vlan:
             src_vlan = pkt_vlan.vid
         else:
-            self.logger.warn("  No vid packets from internal")            
+            self.logger.warn("  No vid packets from internal")
             return
         self.logger.info("  Input IP %s, VLAN %s" % (pkt_ipv4, src_vlan))
 
@@ -181,7 +181,7 @@ class NAVT(app_manager.RyuApp):
 
         # internal to external
         match = parser.OFPMatch(vlan_vid=(0x1000 | vid),
-                                eth_type=ether.ETH_TYPE_IP,
+                                eth_type=ether.ETH_TYPE_8021Q,
                                 in_port=self.INTERNAL_PORT,
                                 ipv4_src=in_ip)
         actions = [parser.OFPActionPopVlan(),
@@ -226,7 +226,7 @@ class NAVT(app_manager.RyuApp):
 
         # internal to external
         match = parser.OFPMatch(in_port=self.INTERNAL_PORT,
-                                eth_type=ether.ETH_TYPE_IP,
+                                eth_type=ether.ETH_TYPE_8021Q,
                                 vlan_vid=(0x1000 | vid),
                                 ipv4_src=in_ip)
         actions = [parser.OFPActionPopVlan(),
