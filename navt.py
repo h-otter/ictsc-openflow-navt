@@ -196,7 +196,7 @@ class NAVT(app_manager.RyuApp):
     def _ex2in_ip(self, datapath, pkt):
         self.logger.info("External network to Internal network")
         pkt_ipv4 = pkt.get_protocol(ipv4.ipv4)
-        self.logger.info("  Input IP %s, VLAN %s" % (pkt_ipv4))
+        self.logger.info("  Input IP %s" % (pkt_ipv4))
 
         try:
             (ex_ip, in_ip, vid) = self.translate_ip(pkt_ipv4.dst)
