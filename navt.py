@@ -2,7 +2,7 @@ from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls
 from ryu.ofproto import ofproto_v1_3
-from ryu.ofproto.ether import ETH_TYPE_8021Q
+from ryu.ofproto import ether
 from ryu.lib.packet import packet, ethernet, ipv4, vlan
 from logging import getLogger, DEBUG, Formatter
 from logging.handlers import RotatingFileHandler as RFH
@@ -62,7 +62,7 @@ class NAVT(app_manager.RyuApp):
 
             # internal to external
             match = parser.OFPMatch(vlan_vid=(0x1000 | vid),
-                                    eth_type=ethernet.ETH_TYPE_ARP,
+                                    eth_type=ether.ETH_TYPE_ARP,
                                     in_port=self.INTERNAL_PORT)
             actions = [parser.OFPActionPopVlan(),
                        parser.OFPActionOutput(self.EXTERNAL_PORT)]
@@ -70,8 +70,8 @@ class NAVT(app_manager.RyuApp):
 
             # external to internal
             match = parser.OFPMatch(in_port=self.EXTERNAL_PORT,
-                                    eth_type=ethernet.ETH_TYPE_ARP)
-            actions = [parser.OFPActionPushVlan(ETH_TYPE_8021Q),
+                                    eth_type=ether.ETH_TYPE_ARP)
+            actions = [parser.OFPActionPushVlan(ether.ETH_TYPE_8021Q),
                        parser.OFPActionSetField(vlan_vid=vid | ofproto_v1_3.OFPVID_PRESENT),
                        parser.OFPActionOutput(self.INTERNAL_PORT)]
             self.add_flow(datapath, 20000, match, actions, 60)
@@ -90,18 +90,18 @@ class NAVT(app_manager.RyuApp):
         if not pkt_ethernet:
             return
         eth_type = pkt_ethernet.ethertype
-        if eth_type == ethernet.ETH_TYPE_8021Q:
+        if eth_type == ether.ether.ETH_TYPE_8021Q:
             pkt_vlan = pkt.get_protocol(vlan.vlan)
             eth_type = pkt_vlan.ethertype
 
-        if eth_type == ethernet.ETH_TYPE_IP:
+        if eth_type == ether.ETH_TYPE_IP:
             if in_port == self.INTERNAL_PORT:
                 self._in2ex_ip(datapath, pkt)
             elif in_port == self.EXTERNAL_PORT:
                 self._ex2in_ip(datapath, pkt)
             else:
                 self.logger.warn("Get packets from invalid port: %d", in_port)
-        # elif eth_type == ethernet.ETH_TYPE_ARP:
+        # elif eth_type == ether.ETH_TYPE_ARP:
         #     if in_port == self.INTERNAL_PORT:
         #         self._in2ex_ip(datapath, pkt)
         #     elif in_port == self.EXTERNAL_PORT:
@@ -174,7 +174,7 @@ class NAVT(app_manager.RyuApp):
 
         # internal to external
         match = parser.OFPMatch(vlan_vid=(0x1000 | vid),
-                                eth_type=ethernet.ETH_TYPE_IP,
+                                eth_type=ether.ETH_TYPE_IP,
                                 in_port=self.INTERNAL_PORT,
                                 ipv4_src=in_ip)
         actions = [parser.OFPActionPopVlan(),
@@ -184,9 +184,9 @@ class NAVT(app_manager.RyuApp):
 
         # external to internal
         match = parser.OFPMatch(in_port=self.EXTERNAL_PORT,
-                                eth_type=ethernet.ETH_TYPE_IP,
+                                eth_type=ether.ETH_TYPE_IP,
                                 ipv4_dst=in_ip)
-        actions = [parser.OFPActionPushVlan(ETH_TYPE_8021Q),
+        actions = [parser.OFPActionPushVlan(ether.ETH_TYPE_8021Q),
                    parser.OFPActionSetField(vlan_vid=vid | ofproto_v1_3.OFPVID_PRESENT),
                    parser.OFPActionSetField(ipv4_dst=in_ip),
                    parser.OFPActionOutput(self.INTERNAL_PORT)]
@@ -209,9 +209,9 @@ class NAVT(app_manager.RyuApp):
 
         # external to internal
         match = parser.OFPMatch(in_port=self.EXTERNAL_PORT,
-                                eth_type=ethernet.ETH_TYPE_IP,
+                                eth_type=ether.ETH_TYPE_IP,
                                 ipv4_dst=ex_ip)
-        actions = [parser.OFPActionPushVlan(ETH_TYPE_8021Q),
+        actions = [parser.OFPActionPushVlan(ether.ETH_TYPE_8021Q),
                    parser.OFPActionSetField(vlan_vid=vid | ofproto_v1_3.OFPVID_PRESENT),
                    parser.OFPActionSetField(ipv4_dst=in_ip),
                    parser.OFPActionOutput(self.INTERNAL_PORT)]
@@ -219,7 +219,7 @@ class NAVT(app_manager.RyuApp):
 
         # internal to external
         match = parser.OFPMatch(in_port=self.INTERNAL_PORT,
-                                eth_type=ethernet.ETH_TYPE_IP,
+                                eth_type=ether.ETH_TYPE_IP,
                                 vlan_vid=(0x1000 | vid),
                                 ipv4_src=in_ip)
         actions = [parser.OFPActionPopVlan(),
