@@ -218,6 +218,7 @@ class NAVT(app_manager.RyuApp):
     def _in2ex_arp(self, datapath, pkt):
         self.logger.info("[ARP] Internal network to External network")
         pkt_ethernet = pkt.get_protocol(ethernet.ethernet)
+        pkt_ethernet.ethertype = ether.ETH_TYPE_ARP
         pkt_arp = pkt.get_protocol(arp.arp)
         self.logger.info("  Input ARP %s" % (pkt_arp))
 
@@ -238,11 +239,11 @@ class NAVT(app_manager.RyuApp):
     def _ex2in_arp(self, datapath, pkt):
         self.logger.info("[ARP] External network to Internal network")
         pkt_ethernet = pkt.get_protocol(ethernet.ethernet)
+        pkt_ethernet.ethertype = ether.ETH_TYPE_8021Q
         pkt_arp = pkt.get_protocol(arp.arp)
         self.logger.info("  Input ARP %s" % (pkt_arp))
-
         ip_seg = pkt_arp.dst_ip.split('.')
-        pkt_vlan = vlan.vlan(vid=int(ip_seg[3]))
+        pkt_vlan = vlan.vlan(vid=int(ip_seg[3]), ethertype=ether.ETH_TYPE_ARP)
 
         new_pkt = packet.Packet()
         new_pkt.add_protocol(pkt_ethernet)
