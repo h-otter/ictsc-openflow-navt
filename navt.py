@@ -66,7 +66,7 @@ class NAVT(app_manager.RyuApp):
                                     in_port=self.INTERNAL_PORT)
             actions = [parser.OFPActionPopVlan(),
                        parser.OFPActionOutput(self.EXTERNAL_PORT)]
-            self.add_flow(datapath, 20000, match, actions, 60)
+            self.add_flow(datapath, 20000, match, actions)
 
             # external to internal
             tpa = ("0.0.0.%d" % (team_id), "0.0.0.255")
@@ -76,7 +76,7 @@ class NAVT(app_manager.RyuApp):
             actions = [parser.OFPActionPushVlan(ether.ETH_TYPE_8021Q),
                        parser.OFPActionSetField(vlan_vid=vid | ofproto_v1_3.OFPVID_PRESENT),
                        parser.OFPActionOutput(self.INTERNAL_PORT)]
-            self.add_flow(datapath, 20000, match, actions, 60)
+            self.add_flow(datapath, 20000, match, actions)
 
         self.logger.info('  Switch ID: %d' % datapath.id)
 
@@ -143,7 +143,7 @@ class NAVT(app_manager.RyuApp):
         return (external_ip, internal_ip, vid)
 
 
-    def add_flow(self, datapath, priority, match, actions, idle_timeout):
+    def add_flow(self, datapath, priority, match, actions, idle_timeout=0):
         """
         フローエントリ追加
         """
