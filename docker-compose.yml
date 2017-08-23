@@ -1,0 +1,11 @@
+version: '3'
+services:
+  navt:
+    build: .
+    container_name: navt
+    ports:
+      - "6633:6633"
+      - "6653:6653"
+    volumes:
+      - ".:/opt/navt"
+    restart: always

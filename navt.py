@@ -49,7 +49,7 @@ class NAVT(app_manager.RyuApp):
         # file_handler.level = DEBUG
         # self.logger.addHandler(file_handler)
         # self.logger.setLevel(DEBUG)
-        # self.logger.debug('Init')
+        self.logger.info('Initialized')
 
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
