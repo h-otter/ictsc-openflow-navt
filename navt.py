@@ -1,6 +1,8 @@
 from ryu.base import app_manager
 from ryu.controller import ofp_event
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls
+from ryu.controller.handler import CONFIG_DISPATCHER
+from ryu.controller.handler import MAIN_DISPATCHER
+from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from ryu.ofproto import ether
 from ryu.lib.packet import packet
@@ -8,7 +10,9 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ipv4
 from ryu.lib.packet import vlan
 from ryu.lib.packet import arp
-from logging import getLogger, DEBUG, Formatter
+from logging import getLogger
+from logging import DEBUG
+from logging import Formatter
 from logging.handlers import RotatingFileHandler as RFH
 from datetime import datetime
 
@@ -142,7 +146,7 @@ class NAVT(app_manager.RyuApp):
 
 
     def _in2ex_ip(self, datapath, pkt):
-        self.logger.info("Internal network to External network")
+        self.logger.info("[IP] Internal network to External network")
         pkt_ipv4 = pkt.get_protocol(ipv4.ipv4)
         pkt_vlan = pkt.get_protocol(vlan.vlan)
         if pkt_vlan:
@@ -162,7 +166,7 @@ class NAVT(app_manager.RyuApp):
 
         # internal to external
         match = parser.OFPMatch(vlan_vid=(0x1000 | vid),
-                                eth_type=ether.ETH_TYPE_8021Q,
+                                eth_type=ether.ETH_TYPE_IP,
                                 in_port=self.INTERNAL_PORT,
                                 ipv4_src=in_ip)
         actions = [parser.OFPActionPopVlan(),
@@ -182,7 +186,7 @@ class NAVT(app_manager.RyuApp):
 
 
     def _ex2in_ip(self, datapath, pkt):
-        self.logger.info("External network to Internal network")
+        self.logger.info("[IP] External network to Internal network")
         pkt_ipv4 = pkt.get_protocol(ipv4.ipv4)
         self.logger.info("  Input IP %s" % (pkt_ipv4))
 
@@ -206,7 +210,7 @@ class NAVT(app_manager.RyuApp):
 
         # internal to external
         match = parser.OFPMatch(in_port=self.INTERNAL_PORT,
-                                eth_type=ether.ETH_TYPE_8021Q,
+                                eth_type=ether.ETH_TYPE_IP,
                                 vlan_vid=(0x1000 | vid),
                                 ipv4_src=in_ip)
         actions = [parser.OFPActionPopVlan(),
