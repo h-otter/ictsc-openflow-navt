@@ -80,6 +80,10 @@ class NAVT(app_manager.RyuApp):
         eth_type = pkt_ethernet.ethertype
         if eth_type == ether.ETH_TYPE_8021Q:
             pkt_vlan = pkt.get_protocol(vlan.vlan)
+            
+            if pkt_vlan.vid % self.VLAN_SEG != self.VLAN_SUFFIX:
+                return
+            
             eth_type = pkt_vlan.ethertype
 
         if eth_type == ether.ETH_TYPE_IP:
